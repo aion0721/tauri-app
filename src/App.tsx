@@ -1,33 +1,39 @@
 import { useState } from "react";
-import reactLogo from "./assets/react.svg";
 import { invoke } from "@tauri-apps/api/core";
+import { open } from "@tauri-apps/plugin-dialog";
+import { readTextFile } from "@tauri-apps/plugin-fs";
 import "./App.css";
 
 function App() {
   const [greetMsg, setGreetMsg] = useState("");
   const [name, setName] = useState("");
 
+  const [fileContent, setFileContent] = useState<string>("");
+
   async function greet() {
     // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
     setGreetMsg(await invoke("greet", { name }));
   }
 
+  const handleFileOpen = async () => {
+    try {
+      const selected = await open({
+        multiple: false,
+        directory: false,
+      });
+
+      if (selected && typeof selected === "string") {
+        const content = await readTextFile(selected);
+        setFileContent(content);
+      }
+    } catch (error) {
+      console.error("Error has occured when read file: ", error);
+    }
+  };
+
   return (
     <main className="container">
       <h1>Welcome to Tauri + React</h1>
-
-      <div className="row">
-        <a href="https://vitejs.dev" target="_blank">
-          <img src="/vite.svg" className="logo vite" alt="Vite logo" />
-        </a>
-        <a href="https://tauri.app" target="_blank">
-          <img src="/tauri.svg" className="logo tauri" alt="Tauri logo" />
-        </a>
-        <a href="https://reactjs.org" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <p>Click on the Tauri, Vite, and React logos to learn more.</p>
 
       <form
         className="row"
@@ -44,6 +50,16 @@ function App() {
         <button type="submit">Greet</button>
       </form>
       <p>Hello, {greetMsg}</p>
+
+      <div>
+        <button onClick={handleFileOpen}>Select File</button>
+        {fileContent && (
+          <div>
+            <h3>FileContent:</h3>
+            <pre>{fileContent}</pre>
+          </div>
+        )}
+      </div>
     </main>
   );
 }
